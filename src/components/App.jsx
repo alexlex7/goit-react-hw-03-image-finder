@@ -6,7 +6,6 @@ import api from '../services/api';
 import ImageGalleryItem from './ImageGalleryItem';
 import Modal from './Modal';
 import Button from './Button';
-import 'react-loader-spinner/dist/loader/css/react-spinner-loader.css';
 import Loader from './Loader';
 
 export class App extends Component {
