@@ -20,11 +20,38 @@ export class App extends Component {
   async componentDidUpdate(prevProps, prevState) {
     const { searchQuery } = this.state;
     const prevSearchQuery = prevState.searchQuery;
+    const { currentPage } = this.state;
+    const prevCurrentPage = prevState.currentPage;
 
     if (prevSearchQuery !== searchQuery) {
       this.setState({ isLoading: true, currentPage: 1 });
-      const { hits } = await api.getImages(searchQuery);
+      const data = await api.getImages(searchQuery);
+      const hits = data.hits.map(
+        ({ webformatURL, tags, id, largeImageURL }) => ({
+          webformatURL,
+          tags,
+          id,
+          largeImageURL,
+        })
+      );
       this.setState({ hits, isLoading: false });
+    }
+
+    if (prevSearchQuery === searchQuery && currentPage !== prevCurrentPage) {
+      this.setState({ isLoading: true });
+      const data = await api.getImages(searchQuery, currentPage);
+      const hits = data.hits.map(
+        ({ webformatURL, tags, id, largeImageURL }) => ({
+          webformatURL,
+          tags,
+          id,
+          largeImageURL,
+        })
+      );
+      this.setState(prevState => ({
+        hits: [...prevState.hits, ...hits],
+        isLoading: false,
+      }));
     }
   }
 
@@ -32,18 +59,8 @@ export class App extends Component {
     this.setState({ searchQuery });
   };
 
-  handleLoadMore = async () => {
-    this.setState({
-      isLoading: true,
-    });
-    const { searchQuery, currentPage } = this.state;
-    const { hits } = await api.getImages(searchQuery, currentPage + 1);
-
-    this.setState(prevState => ({
-      hits: [...prevState.hits, ...hits],
-      isLoading: false,
-      currentPage: prevState.currentPage + 1,
-    }));
+  handleLoadMore = () => {
+    this.setState(({ currentPage }) => ({ currentPage: currentPage + 1 }));
   };
 
   setModalImage = modalImage => {
@@ -59,18 +76,21 @@ export class App extends Component {
     return (
       <div className={s.App}>
         <Searchbar onSubmit={this.handleSubmit} />
-        <ImageGallery>
-          {hits.map(({ webformatURL, tags, id, largeImageURL }) => (
-            <ImageGalleryItem
-              key={id}
-              image={webformatURL}
-              tags={tags}
-              modalImage={largeImageURL}
-              setModalImage={this.setModalImage}
-              toggleModal={this.toggleModal}
-            />
-          ))}
-        </ImageGallery>
+        {hits.length > 0 && (
+          <ImageGallery>
+            {hits.map(({ webformatURL, tags, id, largeImageURL }) => (
+              <ImageGalleryItem
+                key={id}
+                image={webformatURL}
+                tags={tags}
+                modalImage={largeImageURL}
+                setModalImage={this.setModalImage}
+                toggleModal={this.toggleModal}
+              />
+            ))}
+          </ImageGallery>
+        )}
+
         {modalShow && (
           <Modal
             image={modalImage}
